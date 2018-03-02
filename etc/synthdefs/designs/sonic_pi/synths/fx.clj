@@ -15,8 +15,116 @@
   (:use [overtone.live])
   (:require [sonic-pi.synths.core :as core]))
 
-
 (without-namespace-in-synthdef
+  (core/def-fx sonic-pi-fx_mcverb
+   [num_allpasses 4
+    num_combs 7
+    allpass_rand 0.05
+    allpass_rand_slide 0
+
+    allpass_rand_slide_shape 1
+    allpass_rand_slide_curve 0
+    comb_min_delay 0.01
+    comb_min_delay_slide 0
+    comb_min_delay_slide_shape 1
+    comb_min_delay_slide_curve 0
+    comb_max_delay 0.09
+    comb_max_delay_slide 0
+    comb_max_delay_slide_shape 1
+    comb_max_delay_slide_curve 0
+    comb_decay 15
+    pre_delay 0.048
+    seed 0
+    slope 8
+    rand_buf 0
+]
+
+   [
+    allpass_rand (varlag allpass_rand allpass_rand_slide allpass_rand_slide_curve allpass_rand_slide_shape)
+    comb_min_delay (varlag comb_min_delay comb_min_delay_slide comb_min_delay_slide_curve comb_min_delay_slide_shape)
+    comb_max_delay (varlag comb_max_delay comb_max_delay_slide comb_max_delay_slide_curve comb_max_delay_slide_shape)
+
+    num_combs      (- (clip num_combs 1 10) 1)
+    num_allpasses  (clip num_allpasses 1 4)
+    pre_delay      (clip pre_delay 0 0.2)
+    allpass_rand   (clip (lin-lin allpass_rand 0 1 0 0.3) 0 0.3)
+    comb_max_delay (clip comb_max_delay 0 1)
+    comb_min_delay (clip comb_min_delay 0 comb_max_delay)
+    slope          (clip slope 0.001 8)
+
+    pre-delay-l (delay-n dry-l pre_delay)
+    pre-delay-r (delay-n dry-r pre_delay)
+
+    r #(core/deterministic-rand rand_buf %1)
+    n #(core/deterministic-lf-noise1 rand_buf %1 (r %1) slope)
+    cl #(comb-l:ar pre-delay-l 0.3 (lin-lin (n (+ seed %1)) -1 1 comb_min_delay comb_max_delay) comb_decay)
+    cr #(comb-l:ar pre-delay-r 0.3 (lin-lin (n (+ seed %1)) -1 1 comb_min_delay comb_max_delay) comb_decay)
+
+    cl0 (cl 0)
+    cr0 (cr 1)
+    cl1 (cl 2)
+    cr1 (cr 3)
+    cl2 (cl 4)
+    cr2 (cr 5)
+    cl3 (cl 6)
+    cr3 (cr 7)
+    cl4 (cl 8)
+    cr4 (cr 9)
+    cl5 (cl 10)
+    cr5 (cr 11)
+    cl6 (cl 12)
+    cr6 (cr 13)
+    cl7 (cl 14)
+    cr7 (cr 15)
+    cl8 (cl 16)
+    cr8 (cr 17)
+    cl9 (cl 18)
+    cr9 (cr 19)
+
+    rev-r (select num_combs [cr0
+                             (/ (+ cr0 cr1) 2)
+                             (/ (+ cr0 cr1 cr2) 3)
+                             (/ (+ cr0 cr1 cr2 cr3) 4)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4) 5)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4 cr5) 6)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4 cr5 cr6) 7)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4 cr5 cr6 cr7) 8)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4 cr5 cr6 cr7 cr8) 9)
+                             (/ (+ cr0 cr1 cr2 cr3 cr4 cr5 cr6 cr7 cr8 cr9) 10)])
+
+    rev-l (select num_combs [cl0
+                             (/ (+ cl0 cl1) 2)
+                             (/ (+ cl0 cl1 cl2) 3)
+                             (/ (+ cl0 cl1 cl2 cl3) 4)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4) 5)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4 cl5) 6)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4 cl5 cl6) 7)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4 cl5 cl6 cl7) 8)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4 cl5 cl6 cl7 cl8) 9)
+                             (/ (+ cl0 cl1 cl2 cl3 cl4 cl5 cl6 cl7 cl8 cl9) 10)])
+
+    rev-l1 (allpass-n rev-l  0.3 (core/deterministic-rand rand_buf seed allpass_rand))
+    rev-l2 (allpass-n rev-l1 0.3 (core/deterministic-rand rand_buf (+ seed 1) allpass_rand) 1)
+    rev-l3 (allpass-n rev-l2 0.3 (core/deterministic-rand rand_buf (+ seed 2) allpass_rand) 1)
+    rev-l4 (allpass-n rev-l3 0.3 (core/deterministic-rand rand_buf (+ seed 3) allpass_rand) 1)
+
+    rev-r1 (allpass-n rev-r  0.3 (core/deterministic-rand rand_buf (+ seed 4) allpass_rand) 1)
+    rev-r2 (allpass-n rev-r1 0.3 (core/deterministic-rand rand_buf (+ seed 5) allpass_rand) 1)
+    rev-r3 (allpass-n rev-r2 0.3 (core/deterministic-rand rand_buf (+ seed 6) allpass_rand) 1)
+    rev-r4 (allpass-n rev-r3 0.3 (core/deterministic-rand rand_buf (+ seed 7) allpass_rand) 1)
+
+    wet-l (select num_allpasses [0
+                                 rev-l1
+                                 rev-l2
+                                 rev-l3
+                                 rev-l4])
+
+    wet-r (select num_allpasses [0
+                                 rev-r1
+                                 rev-r2
+                                 rev-r3
+                                 rev-r4])
+    ])
 
  (core/def-fx sonic-pi-fx_mono
    [pan 0
@@ -725,7 +833,7 @@
 
 ;; need to break these up due to Clojure's method size limitation
 (without-namespace-in-synthdef
-  (core/def-fx sonic-pi-fx_nrlpf
+ (core/def-fx sonic-pi-fx_nrlpf
    [cutoff 100
     cutoff_slide 0
     cutoff_slide_shape 1
@@ -866,6 +974,21 @@
     [wet-l wet-r] (bpf [dry-l dry-r] freq res)])
 
 
+ (core/def-fx sonic-pi-fx_nbpf
+   [centre 100
+    centre_slide 0
+    centre_slide_shape 1
+    centre_slide_curve 0
+    res 0.6
+    res_slide 0
+    res_slide_shape 1
+    res_slide_curve 0]
+   [centre        (varlag centre centre_slide centre_slide_curve centre_slide_shape)
+    freq          (midicps centre)
+    res           (lin-lin res 1 0 0 1)
+    res           (varlag res res_slide res_slide_curve res_slide_shape)
+
+    [wet-l wet-r] (normalizer (bpf [dry-l dry-r] freq res))])
 
  (core/def-fx sonic-pi-fx_rbpf
    [centre 100
@@ -1022,46 +1145,251 @@
     wet-r               (+ dry-r (* flange-wave-mul delay-r))
     lout                (local-out:ar [wet-l wet-r])])
 
+ (core/def-fx sonic-pi-fx_eq
+   [
+    low_shelf 0
+    low_shelf_slide 0
+    low_shelf_slide_shape 1
+    low_shelf_slide_curve 0
+    low_shelf_note 43.349957
+    low_shelf_note_slide 0
+    low_shelf_note_slide_shape 1
+    low_shelf_note_slide_curve 0
+    low_shelf_slope 1
+    low_shelf_slope_slide 0
+    low_shelf_slope_slide_shape 1
+    low_shelf_slope_slide_curve 0
+
+    low 0
+    low_slide 0
+    low_slide_shape 1
+    low_slide_curve 0
+    low_note 59.2130948
+    low_note_slide 0
+    low_note_slide_shape 1
+    low_note_slide_curve 0
+    low_q 0.6
+    low_q_slide 0
+    low_q_slide_shape 1
+    low_q_slide_curve 0
+
+    mid 0
+    mid_slide 0
+    mid_slide_shape 1
+    mid_slide_curve 0
+    mid_note 83.2130948
+    mid_note_slide 0
+    mid_note_slide_shape 1
+    mid_note_slide_curve 0
+    mid_q 0.6
+    mid_q_slide 0
+    mid_q_slide_shape 1
+    mid_q_slide_curve 0
+
+    high 0
+    high_slide 0
+    high_slide_shape 1
+    high_slide_curve 0
+    high_note 104.9013539
+    high_note_slide 0
+    high_note_slide_shape 1
+    high_note_slide_curve 0
+    high_q 0.6
+    high_q_slide 0
+    high_q_slide_shape 1
+    high_q_slide_curve 0
+
+    high_shelf 0
+    high_shelf_slide 0
+    high_shelf_slide_shape 1
+    high_shelf_slide_curve 0
+    high_shelf_note 114.2326448
+    high_shelf_note_slide 0
+    high_shelf_note_slide_shape 1
+    high_shelf_note_slide_curve 0
+    high_shelf_slope 1
+    high_shelf_slope_slide 0
+    high_shelf_slope_slide_shape 1
+    high_shelf_slope_slide_curve 0
+
+    ]
+   [
+    low_shelf        (varlag low_shelf low_shelf_slide low_shelf_slide_curve low_shelf_slide_shape)
+    low_shelf        (* low_shelf 15)
+    low_shelf_note   (varlag low_shelf_note low_shelf_note_slide low_shelf_note_slide_curve low_shelf_note_slide_shape)
+    low-shelf-freq   (midicps low_shelf_note)
+    low_shelf_slope  (varlag low_shelf_slope low_shelf_slope_slide low_shelf_slope_slide_curve low_shelf_slope_slide_shape)
+
+    low        (varlag low low_slide low_slide_curve low_slide_shape)
+    low        (* low 15)
+    low_note   (varlag low_note low_note_slide low_note_slide_curve low_note_slide_shape)
+    low-freq   (midicps low_note)
+    low_q      (varlag low_q low_q_slide low_q_slide_curve low_q_slide_shape)
+    low_q      (max 0.001 low_q)
+    low_q      (/ 1 low_q)
+
+    mid        (varlag mid mid_slide mid_slide_curve mid_slide_shape)
+    mid        (* mid 15)
+    mid_note   (varlag mid_note mid_note_slide mid_note_slide_curve mid_note_slide_shape)
+    mid-freq   (midicps mid_note)
+    mid_q      (varlag mid_q mid_q_slide mid_q_slide_curve mid_q_slide_shape)
+    mid_q      (max 0.001 mid_q)
+    mid_q      (/ 1 mid_q)
+
+    high        (varlag high high_slide high_slide_curve high_slide_shape)
+    high        (* high 15)
+    high_note   (varlag high_note high_note_slide high_note_slide_curve high_note_slide_shape)
+    high-freq   (midicps high_note)
+    high_q      (varlag high_q high_q_slide high_q_slide_curve high_q_slide_shape)
+    high_q      (max 0.001 high_q)
+    high_q      (/ 1 high_q)
+
+    high_shelf        (varlag high_shelf high_shelf_slide high_shelf_slide_curve high_shelf_slide_shape)
+    high_shelf        (* high_shelf 15)
+    high_shelf_note   (varlag high_shelf_note high_shelf_note_slide high_shelf_note_slide_curve high_shelf_note_slide_shape)
+    high-shelf-freq   (midicps high_shelf_note)
+    high_shelf_slope  (varlag high_shelf_slope high_shelf_slope_slide high_shelf_slope_slide_curve high_shelf_slope_slide_shape)
+
+    snd (b-low-shelf [dry-l dry-r] low-shelf-freq low_shelf_slope low_shelf)
+    snd (b-peak-eq snd low-freq low_q low)
+    snd (b-peak-eq snd mid-freq high_q mid)
+    snd (b-peak-eq snd high-freq high_q high)
+    snd (b-hi-shelf snd high-shelf-freq high_shelf_slope high_shelf)
+
+    [wet-l wet-r] snd])
+
+ (core/def-fx sonic-pi-fx_record
+   [buffer      0]
+   [_           (record-buf:ar [dry-l dry-r] buffer :loop 0)
+    wet-l       dry-l
+    wet-r       dry-r]
+   )
+
+ (core/def-fx sonic-pi-fx_tremolo
+   [phase 4
+    phase_slide 0
+    phase_slide_shape 1
+    phase_slide_curve 0
+    phase_offset 0
+    wave 2
+    invert_wave 0
+
+    pulse_width 0.5
+    pulse_width_slide 0
+    pulse_width_slide_shape 1
+    pulse_width_slide_curve 0
+
+    depth 0.5
+    depth_slide 0
+    depth_slide_shape 1
+    depth_slide_curve 0]
+   [phase               (varlag phase phase_slide phase_slide_curve phase_slide_shape)
+    pulse_width         (varlag pulse_width pulse_width_slide pulse_width_slide_curve pulse_width_slide_shape)
+    depth               (varlag depth depth_slide depth_slide_curve depth_slide_shape)
+    rate                (/ 1 phase)
+
+    double_phase_offset (* 2 phase_offset)
+    rate                (/ 1 phase)
+    ctl-wave            (select:kr wave [(+ (/ (lf-saw:kr rate (+ double_phase_offset 1)) 2) 0.5)
+                                         (lf-pulse:kr rate phase_offset pulse_width)
+                                         (+ (/ (lf-tri:kr rate (+ double_phase_offset 1)) 2) 0.5)
+                                         (+ (/ (sin-osc:kr rate (* (+ phase_offset 0.25) (* Math/PI 2))) 2) 0.5)
+                                         (+ (/ (lf-cub:kr rate (+ phase_offset 0.5)) 2) 0.5)
+                                         ])
+    ctl-wave            (/ (+ ctl-wave 1) 2)
+    inverted-ctl-wave   (- 1 ctl-wave)
+
+    ctl-wave-i          (select:kr invert_wave [ctl-wave
+                                                inverted-ctl-wave])
+
+    tremolo-wave-mul    (* ctl-wave-i depth)
+    [wet-l wet-r]       [(- dry-l (* dry-l tremolo-wave-mul)) (- dry-r (* dry-r tremolo-wave-mul))]])
 
 
+ (core/def-fx sonic-pi-fx_sound_out_stereo
+   [output 0
+    mode 0]
+   [
+    output (- output 1)
+    mono (/ (sum [dry-l dry-r]) 2)
+    fx-l (select:ar mode [dry-l
+                          dry-r
+                          mono])
+    fx-r (select:ar mode [dry-r
+                          dry-l
+                          mono])
 
-)
+    _ (out output [fx-l fx-r])
+    [wet-l wet-r] [dry-l dry-r]
+    ])
 
- (comment
-   (core/save-synthdef sonic-pi-fx_echo)
-   (core/save-synthdef sonic-pi-fx_reverb)
-   (core/save-synthdef sonic-pi-fx_mono)
-   (core/save-synthdef sonic-pi-fx_vowel)
+ (core/def-fx sonic-pi-fx_sound_out
+   [output 0
+    mode 0]
+   [
+    output (- output 1)
+    mono (/ (sum [dry-l dry-r]) 2)
+    src (select:ar mode [mono
+                         dry-l
+                         dry-r
+])
+    _ (out output src)
+    [wet-l wet-r] [dry-l dry-r]
+    ])
 
-   (core/save-synthdef sonic-pi-fx_krush)
-   (core/save-synthdef sonic-pi-fx_bitcrusher)
+ (core/def-fx sonic-pi-fx_scope_out
+   [scope_num 0
+    max_frames 4096]
+   [
+    _ (scope-out2 [dry-l dry-r] scope_num max_frames)
+    [wet-l wet-r] [dry-l dry-r]
+    ])
+ )
 
-   (core/save-synthdef sonic-pi-fx_gverb)
-   (core/save-synthdef sonic-pi-fx_level)
+(comment
+  ;;(core/save-synthdef sonic-pi-fx_mcverb)
+  (core/save-synthdef sonic-pi-fx_scope_out)
+  (core/save-synthdef sonic-pi-fx_sound_out)
+  (core/save-synthdef sonic-pi-fx_sound_out_stereo)
+  (core/save-synthdef sonic-pi-fx_record)
+  (core/save-synthdef sonic-pi-fx_eq)
+  (core/save-synthdef sonic-pi-fx_echo)
+  (core/save-synthdef sonic-pi-fx_reverb)
+  (core/save-synthdef sonic-pi-fx_mono)
+  (core/save-synthdef sonic-pi-fx_vowel)
 
-   (core/save-synthdef sonic-pi-fx_slicer)
-   (core/save-synthdef sonic-pi-fx_panslicer)
-   (core/save-synthdef sonic-pi-fx_wobble)
-   (core/save-synthdef sonic-pi-fx_ixi_techno)
-   (core/save-synthdef sonic-pi-fx_compressor)
-   (core/save-synthdef sonic-pi-fx_band_eq)
-   (core/save-synthdef sonic-pi-fx_rlpf)
-   (core/save-synthdef sonic-pi-fx_nrlpf)
-   (core/save-synthdef sonic-pi-fx_rhpf)
-   (core/save-synthdef sonic-pi-fx_nrhpf)
-   (core/save-synthdef sonic-pi-fx_hpf)
-   (core/save-synthdef sonic-pi-fx_nhpf)
-   (core/save-synthdef sonic-pi-fx_lpf)
-   (core/save-synthdef sonic-pi-fx_nlpf)
-   (core/save-synthdef sonic-pi-fx_normaliser)
-   (core/save-synthdef sonic-pi-fx_distortion)
-   (core/save-synthdef sonic-pi-fx_pan)
-   (core/save-synthdef sonic-pi-fx_bpf)
-   (core/save-synthdef sonic-pi-fx_rbpf)
-   (core/save-synthdef sonic-pi-fx_nrbpf)
-   (core/save-synthdef sonic-pi-fx_tanh)
-   (core/save-synthdef sonic-pi-fx_whammy)
-   (core/save-synthdef sonic-pi-fx_pitch_shift)
-   (core/save-synthdef sonic-pi-fx_ring_mod)
-   (core/save-synthdef sonic-pi-fx_octaver)
-   (core/save-synthdef sonic-pi-fx_flanger))
+  (core/save-synthdef sonic-pi-fx_krush)
+  (core/save-synthdef sonic-pi-fx_bitcrusher)
+
+  (core/save-synthdef sonic-pi-fx_gverb)
+  (core/save-synthdef sonic-pi-fx_level)
+
+  (core/save-synthdef sonic-pi-fx_slicer)
+  (core/save-synthdef sonic-pi-fx_panslicer)
+  (core/save-synthdef sonic-pi-fx_wobble)
+  (core/save-synthdef sonic-pi-fx_ixi_techno)
+  (core/save-synthdef sonic-pi-fx_compressor)
+  (core/save-synthdef sonic-pi-fx_band_eq)
+  (core/save-synthdef sonic-pi-fx_rlpf)
+  (core/save-synthdef sonic-pi-fx_nrlpf)
+  (core/save-synthdef sonic-pi-fx_rhpf)
+  (core/save-synthdef sonic-pi-fx_nrhpf)
+  (core/save-synthdef sonic-pi-fx_hpf)
+  (core/save-synthdef sonic-pi-fx_nhpf)
+  (core/save-synthdef sonic-pi-fx_lpf)
+  (core/save-synthdef sonic-pi-fx_nlpf)
+  (core/save-synthdef sonic-pi-fx_normaliser)
+  (core/save-synthdef sonic-pi-fx_distortion)
+  (core/save-synthdef sonic-pi-fx_pan)
+  (core/save-synthdef sonic-pi-fx_bpf)
+  (core/save-synthdef sonic-pi-fx_nbpf)
+  (core/save-synthdef sonic-pi-fx_rbpf)
+  (core/save-synthdef sonic-pi-fx_nrbpf)
+  (core/save-synthdef sonic-pi-fx_tanh)
+  (core/save-synthdef sonic-pi-fx_whammy)
+  (core/save-synthdef sonic-pi-fx_pitch_shift)
+  (core/save-synthdef sonic-pi-fx_ring_mod)
+  (core/save-synthdef sonic-pi-fx_octaver)
+  (core/save-synthdef sonic-pi-fx_flanger)
+  (core/save-synthdef sonic-pi-fx_tremolo)
+  )

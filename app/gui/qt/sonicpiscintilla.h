@@ -13,6 +13,9 @@
 
 #include <Qsci/qsciscintilla.h>
 #include "sonicpitheme.h"
+#include "oscsender.h"
+#include "sonicpilog.h"
+#include <QCheckBox>
 
 class SonicPiLexer;
 class QSettings;
@@ -22,11 +25,15 @@ class SonicPiScintilla : public QsciScintilla
   Q_OBJECT
 
  public:
-  SonicPiScintilla(SonicPiLexer *lexer, SonicPiTheme *theme);
+  SonicPiScintilla(SonicPiLexer *lexer, SonicPiTheme *theme, QString fileName, OscSender *oscSender, QCheckBox *autoIndent);
 
   virtual QStringList apiContext(int pos, int &context_start,
 				 int &last_word_start);
   SonicPiTheme *theme;
+  QString fileName;
+  OscSender *oscSender;
+  bool selectionMode;
+
   void redraw();
 
   public slots:
@@ -43,6 +50,8 @@ class SonicPiScintilla : public QsciScintilla
     void replaceLine(int lineNumber, QString newLine);
     void replaceLines(int lineStart, int lineFinish, QString newLines);
     void forwardLines(int numLines);
+    void forwardOneLine();
+    void backOneLine();
     void forwardTenLines();
     void backTenLines();
     void moveLineOrSelection(int numLines);
@@ -59,6 +68,11 @@ class SonicPiScintilla : public QsciScintilla
     void zoomFontOut();
     void newLine();
     void replaceBuffer(QString content, int line, int index, int first_line);
+    void newlineAndIndent();
+    void completeListOrNewlineAndIndent();
+
+    void sp_paste();
+    void sp_cut();
 
  private:
     void addKeyBinding(QSettings &qs, int cmd, int key);
@@ -66,4 +80,8 @@ class SonicPiScintilla : public QsciScintilla
     void dragEnterEvent(QDragEnterEvent *pEvent);
     void dropEvent(QDropEvent *pEvent);
     void dragMoveEvent(QDragMoveEvent *event);
+    bool event(QEvent *evt);
+    QCheckBox *autoIndent;
+    QMutex *mutex;
+
 };
